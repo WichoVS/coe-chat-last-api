@@ -104,26 +104,23 @@ public class GroupMemberController {
     public int getChatBetweenMembers(@PathVariable("idContact") int idContact,
                                      @PathVariable("idMember") int idMember) {
 
-        return groupMemberRepository.conversationBetweenContactsExists(idContact, idMember);
+        int idConversation = groupMemberRepository.conversationBetweenContactsExists(idContact, idMember);
+        return idConversation;
     }
 
     @PostMapping("/chat")
     public int createChat(@RequestBody List<GroupMemberDTO> dtos) {
         //comparar conversaciones, que sean iguales
-        ConversationDTO firstConv = dtos.get(0).getConversation();
+        ConversationDTO creatorConv = dtos.get(0).getConversation();
         boolean isSameConversation = true;
         List<Contact> members = new ArrayList<>();
         for (GroupMemberDTO dto : dtos
         ) {
             Contact newMember = contactRepository.findById(dto.getContact().getContactId()).orElse(null);
-            if(newMember == null)
+            if (newMember == null)
                 throw new ResponseStatusException(HttpStatus.NOT_FOUND, "One of the Members was not found!");
-
+            dto.setConversation(creatorConv);
             members.add(newMember);
-            if (!dto.getConversation().equals(firstConv)) {
-                isSameConversation = false;
-                break;
-            }
         }
         if (!isSameConversation)
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
@@ -132,8 +129,8 @@ public class GroupMemberController {
         //Crear conversacion como todas son iguales. y guardar su ID
         Conversation conversation = new Conversation(dtos.get(0).getConversation());
         conversationRepository.save(conversation);
-        for (Contact contact:members
-             ) {
+        for (Contact contact : members
+        ) {
             GroupMember member = new GroupMember();
             member.setConversation(conversation);
             member.setJoinedDatetime(new Date());
